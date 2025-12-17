@@ -1,31 +1,31 @@
 export function getCurrentTabUrl(): Promise<string> {
   return new Promise<string>((resolve) => {
-    chrome.tabs.query({
+    (chrome as any).tabs.query({
       active: true,
       currentWindow: true,
-    }, (tabs) => resolve(tabs[0].url));
+    }, (tabs: any[]) => resolve(tabs[0].url));
   });
 }
 
-export async function importCookies(cookies: chrome.cookies.SetDetails[]): Promise<void> {
+export async function importCookies(cookies: any[]): Promise<void> {
   await Promise.all(cookies.map((cookie) => {
     return new Promise<void>((resolve) => {
-      chrome.cookies.set(cookie, () => resolve());
+      (chrome as any).cookies.set(cookie, () => resolve());
     });
   }));
 }
 
-export function exportCookies(domain: string): Promise<chrome.cookies.SetDetails[]> {
+export function exportCookies(domain: string): Promise<any[]> {
   return new Promise((resolve) => {
-    chrome.cookies.getAll({domain}, (cookies) => {
+    (chrome as any).cookies.getAll({domain}, (cookies: any[]) => {
       resolve(cookies2SetDetails(cookies));
     });
   });
 }
 
-function cookies2SetDetails(cookies: chrome.cookies.Cookie[]): chrome.cookies.SetDetails[] {
+function cookies2SetDetails(cookies: any[]): any[] {
   return cookies.map((cookie) => {
-    const result: chrome.cookies.SetDetails = {
+    const result: any = {
       name: cookie.name,
       value: cookie.value,
       path: cookie.path,
