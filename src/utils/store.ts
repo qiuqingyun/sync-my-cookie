@@ -104,10 +104,10 @@ export const gist = {
   async getDomainList(): Promise<string[]> {
     return JSON.parse(await gistStore.get(keys.DOMAIN_LIST_KEY) || '[]');
   },
-  async getCookies(domain: string): Promise<chrome.cookies.SetDetails[]> {
+  async getCookies(domain: string): Promise<any[]> {
     return JSON.parse(await gistStore.get(domain) || '[]');
   },
-  async set(list: Array<{domain: string, cookies: chrome.cookies.SetDetails[]}>,
+  async set(list: Array<{domain: string, cookies: any[]}>,
             domainList?: string[]): Promise<string[]> {
     if (!domainList) {
       domainList = await gist.getDomainList();

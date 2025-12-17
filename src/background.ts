@@ -2,9 +2,52 @@ import _ from 'lodash';
 import * as chromeUtil from './utils/chrome';
 import {auto, AutoConfiguration, gist} from './utils/store';
 
+declare namespace chrome {
+  export namespace action {
+    export function setBadgeText(details: any): void;
+    export function setBadgeBackgroundColor(details: any): void;
+  }
+  export namespace alarms {
+    export function create(name: string, alarmInfo: any): void;
+    export namespace onAlarm {
+      export function addListener(callback: (alarm: any) => void): void;
+    }
+  }
+  export namespace windows {
+    export function onCreated(callback: () => void): void;
+    export namespace onCreated {
+      export function addListener(callback: () => void): void;
+    }
+  }
+  export namespace cookies {
+    export function onChanged(callback: (changeInfo: any) => void): void;
+    export function getAll(details: any, callback: (cookies: any[]) => void): void;
+    export function set(details: any, callback?: () => void): void;
+    export namespace onChanged {
+      export function addListener(callback: (changeInfo: any) => void): void;
+    }
+  }
+  export namespace tabs {
+    export function query(query: any, callback: (tabs: any[]) => void): void;
+  }
+  export namespace storage {
+    export namespace sync {
+      export function get(keys: string | string[] | object | null, callback: (items: {[key: string]: any}) => void): void;
+      export function set(items: {[key: string]: any}, callback?: () => void): void;
+    }
+  }
+}
+
 const DEBOUNCE_DELAY = 10000;
 
 /* tslint:disable no-console */
+
+// 警报监听器
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name.startsWith('clear-badge-')) {
+    chrome.action.setBadgeText({text: ''});
+  }
+});
 
 // Auto Merge
 chrome.windows.onCreated.addListener(async () => {
@@ -28,7 +71,7 @@ chrome.windows.onCreated.addListener(async () => {
 });
 
 // Auto Push
-chrome.cookies.onChanged.addListener(_.debounce(async () => {
+  chrome.cookies.onChanged.addListener(_.debounce(async () => {
   try {
     console.log('自动推送运行中');
     const list = await filterDomain('autoPush');
@@ -38,7 +81,7 @@ chrome.cookies.onChanged.addListener(_.debounce(async () => {
     }
     console.log(list);
     console.log(`${list.length}个域名需要自动推送：${list.map(([domain]) => domain).join(',')}`);
-    const bulk: Array<{domain: string, cookies: chrome.cookies.SetDetails[]}> = [];
+    const bulk: Array<{domain: string, cookies: any[]}> = [];
     for (const [domain, config] of list) {
       console.log(`正在处理域名${domain}`);
       const newCookies = await chromeUtil.exportCookies(domain);
@@ -122,11 +165,12 @@ chrome.cookies.onChanged.addListener(_.debounce(async () => {
 }, DEBOUNCE_DELAY));
 
 function badge(text: string, color: string = 'red', delay: number = 10000) {
-  chrome.browserAction.setBadgeText({text});
-  chrome.browserAction.setBadgeBackgroundColor({color});
-  setTimeout(() => {
-    chrome.browserAction.setBadgeText({text: ''});
-  }, delay);
+  chrome.action.setBadgeText({text});
+  chrome.action.setBadgeBackgroundColor({color});
+  
+  // 创建一个唯一的警报名称
+  const alarmName = `clear-badge-${Date.now()}`;
+  chrome.alarms.create(alarmName, {delayInMinutes: delay / 60000});
 }
 
 async function filterDomain(type: 'autoPush' | 'autoMerge'): Promise<Array<[string, AutoConfiguration]>> {
